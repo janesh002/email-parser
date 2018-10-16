@@ -5,6 +5,7 @@ require 'fileutils'
 require 'pp'
 require 'date'
 require 'mysql2'
+require 'yaml'
 
 OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'.freeze
 APPLICATION_NAME = 'Gmail API Ruby Quickstart'.freeze
@@ -12,10 +13,13 @@ CREDENTIALS_PATH = 'credentials.json'.freeze
 TOKEN_PATH = 'token.yaml'.freeze
 SCOPE = Google::Apis::GmailV1::AUTH_SCOPE
 
-@db_host  = "localhost"
-@db_user  = "root"
-@db_pass  = "root"
-@db_name = "emailparser"
+# Loading configuration details
+configurations = YAML::load_file('config.yaml')
+
+@db_host  = configurations['db_host']
+@db_user  = configurations['db_user']
+@db_pass  = configurations['db_pass']
+@db_name  = configurations['db_name']
 
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
@@ -46,7 +50,7 @@ service = Google::Apis::GmailV1::GmailService.new
 service.client_options.application_name = APPLICATION_NAME
 service.authorization = authorize
 
-user_id = 'me'
+user_id  = configurations['user_id']
 # MySQL Connection
 client = Mysql2::Client.new(:host => @db_host, :username => @db_user, :password => @db_pass, :database => @db_name)
 
@@ -70,7 +74,7 @@ if (lastCreatedTimestamp != '')
 end
 
 # Fetch user's emails
-result = service.list_user_messages(user_id, q: queryString, label_ids: 'Label_2')
+result = service.list_user_messages(user_id, q: queryString)
 
 if result.result_size_estimate == 0
   abort('No messsages found.')
@@ -118,7 +122,9 @@ result.messages.each {
       if header.name == 'From'
         if header.value =~ /\<(.*?)\>/
           senderEmailId = $1
-          senderValid = 1
+          if validUserIds.include?senderEmailId
+            senderValid = 1
+          end
         end
       end
     }

@@ -1,0 +1,11 @@
+# Database Credentials
+db_host : localhost
+db_user : root
+db_pass : root
+db_name : emailparser
+
+# Email details API URL
+email_api_url : 
+
+# Used ID to be used
+user_id : me
