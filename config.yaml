@@ -5,7 +5,7 @@ db_pass : root
 db_name : emailparser
 
 # Email details API URL
-email_api_url : 
+email_api_url : http://localhost/sample_api.php
 
 # Used ID to be used
 user_id : me

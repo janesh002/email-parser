@@ -6,31 +6,35 @@ require 'pp'
 require 'date'
 require 'mysql2'
 require 'yaml'
+require 'net/http'
 
 # Loading configuration details
 CONFIGURATIONS = YAML::load_file('config.yaml')
 
-# Gmail API constants
+# Gmail API constants.
 OOB_URI = CONFIGURATIONS['OOB_URI'].freeze
 APPLICATION_NAME = CONFIGURATIONS['APPLICATION_NAME'].freeze
 CREDENTIALS_PATH = CONFIGURATIONS['CREDENTIALS_PATH'].freeze
 TOKEN_PATH = CONFIGURATIONS['TOKEN_PATH'].freeze
 SCOPE = Google::Apis::GmailV1::AUTH_SCOPE
 
-# Database credentials
+# Database credentials.
 DB_HOST  = CONFIGURATIONS['db_host']
 DB_USER  = CONFIGURATIONS['db_user']
 DB_PASS  = CONFIGURATIONS['db_pass']
 DB_NAME  = CONFIGURATIONS['db_name']
 
-# User ID for which emails are parsed
-USERID  = CONFIGURATIONS['user_id']
+# User ID for which emails are parsed.
+USER_ID  = CONFIGURATIONS['user_id']
 
-# Date (yyyy/mm/dd) from which emails should be parsed
-STARTDATE = DateTime.parse(CONFIGURATIONS['start_date'])
+# Date (yyyy/mm/dd) from which emails should be parsed.
+START_DATE = DateTime.parse(CONFIGURATIONS['start_date'])
 
-# Label under which relevant emails are nested
-LABELID  = CONFIGURATIONS['label_id']
+# Label under which relevant emails are nested.
+LABEL_ID  = CONFIGURATIONS['label_id']
+
+# API URL for verifying email address.
+EMAIL_API_URL  = CONFIGURATIONS['email_api_url']
 
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
@@ -56,6 +60,22 @@ def authorize
   credentials
 end
 
+##
+# Sends an HTTP request to the API to verify email address.
+# 
+# @param [String] emailId
+#   The sender's email address.
+# 
+# @return API response body
+def verify_email_address(emailId)
+  url = URI.parse(EMAIL_API_URL + '?eid=' + emailId)
+  req = Net::HTTP::Get.new(url.to_s)
+  res = Net::HTTP.start(url.hostname, url.port) {|http|
+    http.request(req)
+  }
+  res.body
+end
+
 # Initialize the API
 service = Google::Apis::GmailV1::GmailService.new
 service.client_options.application_name = APPLICATION_NAME
@@ -79,10 +99,10 @@ lastHistoryCreatedOn.each {
   lastCreatedOn = lastCreated['last_created_on'].to_s
   if lastCreatedOn != ''
     lastCreatedOnDate = DateTime.parse(lastCreatedOn)
-    if lastCreatedOnDate > STARTDATE
+    if lastCreatedOnDate > START_DATE
       lastCreatedTimestamp = lastCreatedOnDate.to_time.to_i
     else
-      lastCreatedTimestamp = STARTDATE.to_time.to_i
+      lastCreatedTimestamp = START_DATE.to_time.to_i
     end
     lastCreatedTimestamp = lastCreatedTimestamp.to_s
   end
@@ -95,15 +115,12 @@ if (lastCreatedTimestamp != '')
 end
 
 # Fetch user's emails
-result = service.list_user_messages(USERID, label_ids: LABELID, q: queryString)
+result = service.list_user_messages(USER_ID, label_ids: LABEL_ID, q: queryString)
 
 # Check for no email found.
 if result.result_size_estimate == 0
   abort('No messsages found.')
 end
-
-# validUserIds will be replaced by the API call from mintifi system
-validUserIds = ['janesh.khanna@ebizontek.com']
 
 # Looping all emails fetched
 result.messages.each {
@@ -111,7 +128,7 @@ result.messages.each {
   # messageId - Unique ID of message.
   messageId = message.id
   # Fetch message details from messageId.
-  messageDetails = service.get_user_message(USERID, messageId)
+  messageDetails = service.get_user_message(USER_ID, messageId)
   # historyId - History IDs increase chronologically with every change to a mailbox.
   historyId = messageDetails.history_id;
   # Read DB to check if email has been parsed earlier.
@@ -136,7 +153,7 @@ result.messages.each {
     if header.name == 'From'
       if header.value =~ /\<(.*?)\>/
         senderEmailId = $1
-        if validUserIds.include?senderEmailId
+        if verify_email_address(senderEmailId)
           senderValid = 1
         end
       end
@@ -157,7 +174,7 @@ result.messages.each {
   if senderValid == 1
     # Gmail API returns attachment file data in hexadecimal.
     # Write it to a new file to recreate attachment. Save it in "./files/" folder.
-    attachmentDetails = service.get_user_message_attachment(USERID, messageId, attachmentId)
+    attachmentDetails = service.get_user_message_attachment(USER_ID, messageId, attachmentId)
     fileName = 'files/' + senderEmailId + '_' + messageId + attachmentExtension
     f = File.new(fileName, 'w')
     f.write(attachmentDetails.data)
@@ -167,6 +184,6 @@ result.messages.each {
   # Save email parsing details to DB.
   @updateParseHistory = client.query('
     INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_sender, attachment_id)
-    VALUES ("' + USERID + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
+    VALUES ("' + USER_ID + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
   ')
 }
