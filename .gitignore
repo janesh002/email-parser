@@ -1,2 +1,1 @@
-./files/*
-!.gitgnore
+./credentials.json
