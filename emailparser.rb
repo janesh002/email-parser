@@ -118,26 +118,12 @@ result.messages.each {
     next
   end
   emailPayloadHeader = messageDetails.payload.headers
-  subjectMatched = senderValid = 0
+  senderValid = 0
   senderEmailId = emailSubject = attachment_id = ''
   emailPayloadHeader.each {
     |header|
     if header.name == 'Subject'
-      emailSubj = header.value.downcase
-      if emailSubj.include? 'kyc document - pan'
-        subjectMatched = 1
-      elsif emailSubj.include? 'kyc document - address'
-        subjectMatched = 1
-      elsif emailSubj.include? 'bank statement'
-        subjectMatched = 1
-      elsif emailSubj.include? 'gst details'
-        subjectMatched = 1
-      elsif emailSubj.include? 'itr details'
-        subjectMatched = 1
-      end
-      if (subjectMatched)
-        emailSubject = header.value
-      end
+      emailSubject = header.value
     end
     if header.name == 'From'
       if header.value =~ /\<(.*?)\>/
@@ -148,7 +134,6 @@ result.messages.each {
       end
     end
   }
-  subjectMatched = 1
   attachmentId = attachmentExtension = ''
   # Traversing message payload for fetching attachment details
   messageDetails.payload.parts.each {
@@ -158,21 +143,19 @@ result.messages.each {
       attachmentExtension = File.extname(payloadPart.filename)
     end
   }
-  validEmail = 0
   # Check if email is valid, extract attachment
-  if subjectMatched == 1 && senderValid == 1
+  if senderValid == 1
     # Gmail API returns file data in hexadecimal. Write it to a new file to recreate attachment
     attachmentDetails = service.get_user_message_attachment(userId, messageId, attachmentId)
     fileName = 'files/' + senderEmailId + '_' + messageId + attachmentExtension
     f = File.new(fileName, 'w')
     f.write(attachmentDetails.data)
     f.close
-    validEmail = 1
   end
   
   # Save email parsing details to DB.
   @updateParseHistory = client.query('
-    INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_subject, valid_sender, valid_email, attachment_id)
-    VALUES ("' + userId + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + subjectMatched.to_s + ', ' + senderValid.to_s + ', ' + validEmail.to_s + ', "' + attachmentId.to_s + '")
+    INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_sender, attachment_id)
+    VALUES ("' + userId + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
   ')
 }
