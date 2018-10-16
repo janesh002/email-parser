@@ -9,3 +9,6 @@ email_api_url :
 
 # Used ID to be used
 user_id : me
+
+# Date (yyyy/mm/dd) from which emails should be parsed
+start_date : '2018/10/16'
