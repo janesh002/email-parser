@@ -7,30 +7,30 @@ require 'date'
 require 'mysql2'
 require 'yaml'
 
-OOB_URI = 'urn:ietf:wg:oauth:2.0:oob'.freeze
-APPLICATION_NAME = 'Gmail API Ruby Quickstart'.freeze
-CREDENTIALS_PATH = 'credentials.json'.freeze
-TOKEN_PATH = 'token.yaml'.freeze
+# Loading configuration details
+CONFIGURATIONS = YAML::load_file('config.yaml')
+
+# Gmail API constants
+OOB_URI = CONFIGURATIONS['OOB_URI'].freeze
+APPLICATION_NAME = CONFIGURATIONS['APPLICATION_NAME'].freeze
+CREDENTIALS_PATH = CONFIGURATIONS['CREDENTIALS_PATH'].freeze
+TOKEN_PATH = CONFIGURATIONS['TOKEN_PATH'].freeze
 SCOPE = Google::Apis::GmailV1::AUTH_SCOPE
 
-# Loading configuration details
-configurations = YAML::load_file('config.yaml')
-
 # Database credentials
-@db_host  = configurations['db_host']
-@db_user  = configurations['db_user']
-@db_pass  = configurations['db_pass']
-@db_name  = configurations['db_name']
+DB_HOST  = CONFIGURATIONS['db_host']
+DB_USER  = CONFIGURATIONS['db_user']
+DB_PASS  = CONFIGURATIONS['db_pass']
+DB_NAME  = CONFIGURATIONS['db_name']
 
 # User ID for which emails are parsed
-userId  = configurations['user_id']
+USERID  = CONFIGURATIONS['user_id']
 
 # Date (yyyy/mm/dd) from which emails should be parsed
-startDate = configurations['start_date']
-startDate = DateTime.parse(startDate)
+STARTDATE = DateTime.parse(CONFIGURATIONS['start_date'])
 
 # Label under which relevant emails are nested
-labelId  = configurations['label_id']
+LABELID  = CONFIGURATIONS['label_id']
 
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
@@ -62,22 +62,27 @@ service.client_options.application_name = APPLICATION_NAME
 service.authorization = authorize
 
 # MySQL Connection
-client = Mysql2::Client.new(:host => @db_host, :username => @db_user, :password => @db_pass, :database => @db_name)
+client = Mysql2::Client.new(:host => DB_HOST, :username => DB_USER, :password => DB_PASS, :database => DB_NAME)
 
 ##
 # Read datetime when last email was parsed.
 # 5 minutes (random fig.) are subtracted as more emails might have come when cron was being run.
-lastHistoryCreatedOn = client.query('SELECT DATE_ADD(MAX(created_on), INTERVAL -5 MINUTE) as last_created_on FROM email_parsing_history')
+lastHistoryCreatedOn = client.query('
+  SELECT DATE_ADD(MAX(created_on), INTERVAL -5 MINUTE) as last_created_on
+  FROM email_parsing_history
+')
+
+# lastCreatedTimestamp - Timestamp after which emails are needed
 lastCreatedTimestamp = ''
 lastHistoryCreatedOn.each {
   |lastCreated|
   lastCreatedOn = lastCreated['last_created_on'].to_s
   if lastCreatedOn != ''
     lastCreatedOnDate = DateTime.parse(lastCreatedOn)
-    if lastCreatedOnDate > startDate
+    if lastCreatedOnDate > STARTDATE
       lastCreatedTimestamp = lastCreatedOnDate.to_time.to_i
     else
-      lastCreatedTimestamp = startDate.to_time.to_i
+      lastCreatedTimestamp = STARTDATE.to_time.to_i
     end
     lastCreatedTimestamp = lastCreatedTimestamp.to_s
   end
@@ -90,7 +95,7 @@ if (lastCreatedTimestamp != '')
 end
 
 # Fetch user's emails
-result = service.list_user_messages(userId, label_ids: labelId, q: queryString)
+result = service.list_user_messages(USERID, label_ids: LABELID, q: queryString)
 
 # Check for no email found.
 if result.result_size_estimate == 0
@@ -103,23 +108,26 @@ validUserIds = ['janesh.khanna@ebizontek.com']
 # Looping all emails fetched
 result.messages.each {
   |message|
-  # messageId - Unique ID of message
+  # messageId - Unique ID of message.
   messageId = message.id
-  # Fetch message details from messageId
-  messageDetails = service.get_user_message(userId, messageId)
-  # historyId - History IDs increase chronologically with every change to a mailbox
+  # Fetch message details from messageId.
+  messageDetails = service.get_user_message(USERID, messageId)
+  # historyId - History IDs increase chronologically with every change to a mailbox.
   historyId = messageDetails.history_id;
-  # See if email has been parsed earlier.
+  # Read DB to check if email has been parsed earlier.
   @parsingHistory = client.query('
     SELECT 1 FROM email_parsing_history
     WHERE message_id = "' + messageId + '" AND history_id = "' + historyId.to_s + '"
   ')
+  # If email has been parsed before, we continue to next iteration
   if (@parsingHistory.count != 0)
     next
   end
+  # emailPayloadHeader - Headers of the email's payload
   emailPayloadHeader = messageDetails.payload.headers
+  # senderValid - Flag signifying whether sender exists in system.
   senderValid = 0
-  senderEmailId = emailSubject = attachment_id = ''
+  senderEmailId = emailSubject = ''
   emailPayloadHeader.each {
     |header|
     if header.name == 'Subject'
@@ -134,6 +142,8 @@ result.messages.each {
       end
     end
   }
+  # attachmentId - Attachment ID received from Gmail
+  # attachmentExtension - File extension of attachment. Re-used when recreating a same file.
   attachmentId = attachmentExtension = ''
   # Traversing message payload for fetching attachment details
   messageDetails.payload.parts.each {
@@ -143,10 +153,11 @@ result.messages.each {
       attachmentExtension = File.extname(payloadPart.filename)
     end
   }
-  # Check if email is valid, extract attachment
+  # Attachment extracted only if sender is valid.
   if senderValid == 1
-    # Gmail API returns file data in hexadecimal. Write it to a new file to recreate attachment
-    attachmentDetails = service.get_user_message_attachment(userId, messageId, attachmentId)
+    # Gmail API returns attachment file data in hexadecimal.
+    # Write it to a new file to recreate attachment. Save it in "./files/" folder.
+    attachmentDetails = service.get_user_message_attachment(USERID, messageId, attachmentId)
     fileName = 'files/' + senderEmailId + '_' + messageId + attachmentExtension
     f = File.new(fileName, 'w')
     f.write(attachmentDetails.data)
@@ -156,6 +167,6 @@ result.messages.each {
   # Save email parsing details to DB.
   @updateParseHistory = client.query('
     INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_sender, attachment_id)
-    VALUES ("' + userId + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
+    VALUES ("' + USERID + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
   ')
 }

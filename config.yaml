@@ -14,4 +14,10 @@ user_id : me
 start_date : 2018/10/16
 
 # Label under which relevant emails are nested
-label_id: Label_6864009176545904706
+label_id : Label_6864009176545904706
+
+# Gmail API Constants
+OOB_URI : urn:ietf:wg:oauth:2.0:oob
+APPLICATION_NAME : Gmail API Ruby Quickstart
+CREDENTIALS_PATH : credentials.json
+TOKEN_PATH : token.yaml
