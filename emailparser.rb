@@ -29,6 +29,9 @@ userId  = configurations['user_id']
 startDate = configurations['start_date']
 startDate = DateTime.parse(startDate)
 
+# Label under which relevant emails are nested
+labelId  = configurations['label_id']
+
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
 # files or intitiating an OAuth2 authorization. If authorization is required,
@@ -81,13 +84,13 @@ lastHistoryCreatedOn.each {
 }
 
 # Emails should have attachment
-queryString = 'has:attachment'
+queryString = ''
 if (lastCreatedTimestamp != '')
   queryString += ' after: ' + lastCreatedTimestamp
 end
 
 # Fetch user's emails
-result = service.list_user_messages(userId, q: queryString)
+result = service.list_user_messages(userId, label_ids: labelId, q: queryString)
 
 # Check for no email found.
 if result.result_size_estimate == 0
@@ -145,6 +148,7 @@ result.messages.each {
       end
     end
   }
+  subjectMatched = 1
   attachmentId = attachmentExtension = ''
   # Traversing message payload for fetching attachment details
   messageDetails.payload.parts.each {
