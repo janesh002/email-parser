@@ -1,23 +1,23 @@
 # Database Credentials
-db_host : localhost
-db_user : root
-db_pass : root
-db_name : emailparser
+db_host : xxx
+db_user : xxx
+db_pass : xxx
+db_name : xxx
 
 # Email details API URL
-email_api_url : http://localhost/sample_api.php
+email_api_url : xx
 
 # Document upload API URL
-document_upload_url: http://localhost/sample_api_2.php
+document_upload_url: xx
 
 # Used ID to be used
 user_id : me
 
 # Date (yyyy/mm/dd) from which emails should be parsed
-start_date : 2018/10/16
+start_date : yyyy/mm/dd
 
-# Label under which relevant emails are nested
-label_id : Label_6864009176545904706
+# Label ID under which relevant emails are nested
+label_id : xxxx
 
 # Gmail API Constants
 OOB_URI : urn:ietf:wg:oauth:2.0:oob
