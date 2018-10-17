@@ -146,7 +146,6 @@ lastHistoryCreatedOn.each {
   end
 }
 
-# Emails should have attachment
 queryString = ''
 if (lastCreatedTimestamp != '')
   queryString += ' after: ' + lastCreatedTimestamp
@@ -160,6 +159,13 @@ if result.result_size_estimate == 0
   abort('No messsages found.')
 end
 
+# historyUpdateQueryStr - Query string of insert queries for storing email parse history.
+historyUpdateQueryStr = '
+  INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_sender, attachment_id)
+  VALUES'
+# updateHistory - Flag to check if insert query is needed to be run.
+updateHistory = 0
+
 # Looping all emails fetched
 result.messages.each {
   |message|
@@ -172,7 +178,7 @@ result.messages.each {
   # Read DB to check if email has been parsed earlier.
   @parsingHistory = client.query('
     SELECT 1 FROM email_parsing_history
-    WHERE message_id = "' + messageId + '" AND history_id = "' + historyId.to_s + '"
+    WHERE message_id = "' + messageId + '"
   ')
   # If email has been parsed before, we continue to next iteration
   if (@parsingHistory.count != 0)
@@ -234,9 +240,14 @@ result.messages.each {
     # f.close
   end
   
-  # Save email parsing details to DB.
-  @updateParseHistory = client.query('
-    INSERT INTO email_parsing_history (user_id, message_id, history_id, email_subject, sender_id, valid_sender, attachment_id)
-    VALUES ("' + USER_ID + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '")
-  ')
+  # Concatenate insert query to be executed later.
+  historyUpdateQueryStr += '
+    ("' + USER_ID + '", "' + messageId + '", "' + historyId.to_s + '", "' + emailSubject.to_s + '", "' + senderEmailId + '", ' + senderValid.to_s + ', "' + attachmentId.to_s + '"),'
+  updateHistory = 1
 }
+# Save email parsing details to DB.
+if updateHistory == 1
+  # chop is used to remove comma(,) at the end
+  historyUpdateQueryStr = historyUpdateQueryStr.strip.chop + ';'
+  @updateParseHistory = client.query(historyUpdateQueryStr)
+end
