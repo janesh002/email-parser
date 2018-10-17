@@ -8,9 +8,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Installing
 
-Install gmail api gem:
-gem install google-api-client -v 0.24.3
-gem install googleauth -v 0.6.6
+Install dependencies:
+sudo bundle install
 
 Configure a new project in https://console.developers.google.com/ and add Gmail API to your project.
 Download OAuth2 credentials of Gmail API. Put contents of that file to root of the project in credentials.json file.
