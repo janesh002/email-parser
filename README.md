@@ -14,7 +14,11 @@ sudo bundle install
 Configure a new project in https://console.developers.google.com/ and add Gmail API to your project.
 Download OAuth2 credentials of Gmail API. Put contents of that file to root of the project in credentials.json file.
 
-Login to Gmail and create filter settings to add contents to a specific label. Put ID of that label in config.yaml file. (To get ID, you can use list_user_labels function (definition in google-api-client-0.24.3/generated/google/apis/gmail_v1/service.rb))
+Create a copy of config.yaml.sample file named config.yaml.
+
+Login to Gmail, create a new label. This label will be used to fetch emails from.
+Add that label's name to config.yaml file.
+Create filter settings to add emails to that label. 
 
 Configure DB credentials in config.yaml file.
 

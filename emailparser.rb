@@ -31,7 +31,7 @@ USER_ID  = CONFIGURATIONS['user_id']
 START_DATE = DateTime.parse(CONFIGURATIONS['start_date'])
 
 # Label under which relevant emails are nested.
-LABEL_ID  = CONFIGURATIONS['label_id']
+LABEL_NAME  = CONFIGURATIONS['LABEL_NAME']
 
 # API URL for verifying email address.
 EMAIL_API_URL  = CONFIGURATIONS['email_api_url']
@@ -166,8 +166,26 @@ if (lastCreatedTimestamp != '')
   queryString += ' after: ' + lastCreatedTimestamp
 end
 
+# Fetch user's labels
+labelList = service.list_user_labels(USER_ID)
+
+# labelId - Stores label id of the label which stores required emails.
+labelId = ''
+labelList.labels.each {
+  |labelDetails|
+  if labelDetails.name.downcase.strip == LABEL_NAME.downcase
+    labelId = labelDetails.id
+    break
+  end
+}
+
+# Check if required label is found.
+if labelId == ''
+  abort('Label "' + LABEL_NAME + '" not found. If not created, please create one.')
+end
+
 # Fetch user's emails
-result = service.list_user_messages(USER_ID, label_ids: LABEL_ID, q: queryString)
+result = service.list_user_messages(USER_ID, label_ids: labelId, q: queryString)
 
 # Check for no email found.
 if result.result_size_estimate == 0

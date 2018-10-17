@@ -16,8 +16,8 @@ user_id : me
 # Date (yyyy/mm/dd) from which emails should be parsed
 start_date : yyyy/mm/dd
 
-# Label ID under which relevant emails are nested
-label_id : xxxx
+# Label name under which relevant emails are nested
+LABEL_NAME : xxxxx
 
 # Gmail API Constants
 OOB_URI : urn:ietf:wg:oauth:2.0:oob
