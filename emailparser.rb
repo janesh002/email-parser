@@ -7,6 +7,7 @@ require 'date'
 require 'mysql2'
 require 'yaml'
 require 'net/http'
+require 'net/sftp'
 
 # Loading configuration details
 CONFIGURATIONS = YAML::load_file('config.yaml')
@@ -35,6 +36,7 @@ LABEL_ID  = CONFIGURATIONS['label_id']
 
 # API URL for verifying email address.
 EMAIL_API_URL  = CONFIGURATIONS['email_api_url']
+DOCUMENT_UPLOAD_URL  = CONFIGURATIONS['document_upload_url']
 
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
@@ -75,6 +77,37 @@ def verify_email_address(emailId)
   }
   res.body
 end
+
+##
+# Sends data to document upload API.
+# 
+# @param [String] loan_applicant_id
+#   Applicant's load ID.
+# 
+# @param [String] document_category
+#   Uploaded document's category.
+# 
+# @param [String] document_type
+#   Uploaded document's type.
+# 
+# @param [String] image_data
+#   The hexadecimal code of image.
+# 
+# @return API response body
+def upload_document(loan_applicant_id, document_category, document_type, image_data)
+  uri = URI.parse(DOCUMENT_UPLOAD_URL)
+  request_data = {
+   :loan_applicant_id => loan_applicant_id,
+   :document_category => document_category,
+   :document_type => document_type,
+   :image_data => image_data,
+  }
+  res = Net::HTTP.post_form(uri,request_data)
+  res.code
+  res.body
+end
+
+# Main code starts here
 
 # Initialize the API
 service = Google::Apis::GmailV1::GmailService.new
@@ -153,6 +186,7 @@ result.messages.each {
     if header.name == 'From'
       if header.value =~ /\<(.*?)\>/
         senderEmailId = $1
+        # Uses email verification API
         if verify_email_address(senderEmailId)
           senderValid = 1
         end
@@ -170,15 +204,29 @@ result.messages.each {
       attachmentExtension = File.extname(payloadPart.filename)
     end
   }
+
+  # Details of loan applicant. These details should be received from email verification API.
+  loan_applicant_id = 'xxx'
+  document_category = 'xxx'
+  document_type = 'xxx'
+
   # Attachment extracted only if sender is valid.
   if senderValid == 1
     # Gmail API returns attachment file data in hexadecimal.
-    # Write it to a new file to recreate attachment. Save it in "./files/" folder.
     attachmentDetails = service.get_user_message_attachment(USER_ID, messageId, attachmentId)
-    fileName = 'files/' + senderEmailId + '_' + messageId + attachmentExtension
-    f = File.new(fileName, 'w')
-    f.write(attachmentDetails.data)
-    f.close
+    
+    # Uses document upload API.
+    upload_document(loan_applicant_id, document_category, document_type, attachmentDetails.data)
+
+    ##
+    # Block to write file data to a new file to recreate attachment and save in
+    # "./files/" directory locally.
+    #
+
+    # fileName = 'files/' + senderEmailId + '_' + messageId + attachmentExtension
+    # f = File.new(fileName, 'w')
+    # f.write(attachmentDetails.data)
+    # f.close
   end
   
   # Save email parsing details to DB.

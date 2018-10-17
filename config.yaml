@@ -7,6 +7,9 @@ db_name : emailparser
 # Email details API URL
 email_api_url : http://localhost/sample_api.php
 
+# Document upload API URL
+document_upload_url: http://localhost/sample_api_2.php
+
 # Used ID to be used
 user_id : me
 
