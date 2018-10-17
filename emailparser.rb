@@ -122,6 +122,22 @@ service.authorization = authorize
 # MySQL Connection
 client = Mysql2::Client.new(:host => DB_HOST, :username => DB_USER, :password => DB_PASS, :database => DB_NAME)
 
+# Create table query for storing email history.
+createTable = client.query('
+  CREATE TABLE IF NOT EXISTS `email_parsing_history` (
+   `id` int(11) NOT NULL AUTO_INCREMENT,
+   `user_id` varchar(1000) NOT NULL,
+   `message_id` varchar(1000) NOT NULL,
+   `history_id` varchar(1000) NOT NULL,
+   `email_subject` varchar(1000) NOT NULL,
+   `sender_id` varchar(1000) NOT NULL,
+   `valid_sender` int(11) NOT NULL,
+   `attachment_id` varchar(1000) NOT NULL,
+   `created_on` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+   PRIMARY KEY (`id`)
+  ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+')
+
 ##
 # Read datetime when last email was parsed.
 # CRON_APPROX_RUN_TIME (in minutes) is subtracted as more emails might have come when cron was being run.
