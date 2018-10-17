@@ -38,6 +38,11 @@ LABEL_ID  = CONFIGURATIONS['label_id']
 EMAIL_API_URL  = CONFIGURATIONS['email_api_url']
 DOCUMENT_UPLOAD_URL  = CONFIGURATIONS['document_upload_url']
 
+# Approx time taken (in minutes) by cron run.
+# This is used along with "last email parsing time" as more emails might have come 
+# when cron was being run
+CRON_APPROX_RUN_TIME = CONFIGURATIONS['CRON_APPROX_RUN_TIME'].to_s
+
 ##
 # Ensure valid credentials, either by restoring from the saved credentials
 # files or intitiating an OAuth2 authorization. If authorization is required,
@@ -119,9 +124,9 @@ client = Mysql2::Client.new(:host => DB_HOST, :username => DB_USER, :password =>
 
 ##
 # Read datetime when last email was parsed.
-# 5 minutes (random fig.) are subtracted as more emails might have come when cron was being run.
+# CRON_APPROX_RUN_TIME (in minutes) is subtracted as more emails might have come when cron was being run.
 lastHistoryCreatedOn = client.query('
-  SELECT DATE_ADD(MAX(created_on), INTERVAL -5 MINUTE) as last_created_on
+  SELECT DATE_ADD(MAX(created_on), INTERVAL -' + CRON_APPROX_RUN_TIME + ' MINUTE) as last_created_on
   FROM email_parsing_history
 ')
 
@@ -214,7 +219,7 @@ result.messages.each {
   if senderValid == 1
     # Gmail API returns attachment file data in hexadecimal.
     attachmentDetails = service.get_user_message_attachment(USER_ID, messageId, attachmentId)
-    
+
     # Uses document upload API.
     upload_document(loan_applicant_id, document_category, document_type, attachmentDetails.data)
 

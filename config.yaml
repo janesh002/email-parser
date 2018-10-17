@@ -24,3 +24,8 @@ OOB_URI : urn:ietf:wg:oauth:2.0:oob
 APPLICATION_NAME : Gmail API Ruby Quickstart
 CREDENTIALS_PATH : credentials.json
 TOKEN_PATH : token.yaml
+
+# Approx time taken (in minutes) by cron run.
+# This is used along with "last email parsing time" as more emails might have come 
+# when cron was being run
+CRON_APPROX_RUN_TIME : 5
