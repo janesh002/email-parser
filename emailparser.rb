@@ -7,7 +7,6 @@ require 'date'
 require 'mysql2'
 require 'yaml'
 require 'net/http'
-require 'net/sftp'
 
 # Loading configuration details
 CONFIGURATIONS = YAML::load_file('config.yaml')
