@@ -11,15 +11,26 @@ These instructions will get you a copy of the project up and running on your loc
 Install dependencies:
 sudo bundle install
 
-Configure a new project in https://console.developers.google.com/ and add Gmail API to your project.
-Download OAuth2 credentials of Gmail API. Put contents of that file to root of the project in credentials.json file.
+Create a new project in Google Developer's console from https://console.developers.google.com/projectcreate and add Gmail API to your project.
+
+In dashboard, under "Getting Started", select "Enable APIs and get credentials like keys" section.
+Click on Enable API & Services and search Gmail API. Click on it and enable it.
+Click on Credentials section in left menu and select "Create Credential". For "Where will you be calling the API from?", select "Other UI". For "What data will you be accessing?", select "User Data". Follow remaining on-screen steps. Download credentials. Put the contents of those file to root of the project in credentials.json file.
 
 Create a copy of config.yaml.sample file named config.yaml.
 
-Login to Gmail, create a new label. This label will be used to fetch emails from.
-Add that label's name to config.yaml file.
+Open Gmail (http://www.gmail.com/).
+Now, we need to create filter settings specifically for our email parser.
 
-Create filter settings as below to apply above created label to emails:
+For reference, following steps can be used on how to create a gmail filter setting and apply a label to all filtered emails:
+- Open Gmail.
+- In the search box at the top, click the Down arrow Down Arrow.
+- Enter your search criteria. If you want to check that your search worked correctly, see what emails show up by clicking Search. 
+- At the bottom of the search window, click Create filter.
+- Select Apply the label option, and choose label.
+- Create a new label separately for our email parser. All filter settings we will be creating will put emails to this label only.
+
+Using above steps, create settings as below:
 - Subject has "KYC" and has attachment
 - Subject has "gst" and has attachment
 - Subject has "document address" and has attachment
@@ -27,7 +38,9 @@ Create filter settings as below to apply above created label to emails:
 - Subject has "itr" and has attachment
 - Subject has "document pan" and has attachment
 
-Configure DB credentials in config.yaml file.
+Add the label's name to config.yaml file.
+
+Configure DB credentials in config.yaml file. Make sure DB name which is configured is created in MySQL.
 
 Configure start_date from which you want to start parsing emails in config.yaml file.
 
