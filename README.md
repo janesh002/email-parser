@@ -36,17 +36,12 @@ Using above steps, create settings as below:
 - Subject has "itr" and has attachment
 - Subject has "document pan" and has attachment
 
-Create a copy of config.yaml.sample file named config.yaml.
-
-Add the Gmail label's name to config.yaml file.
-
-Configure DB credentials in config.yaml file. Make sure DB name which is configured is created in MySQL.
-
-Configure start_date from which you want to start parsing emails in config.yaml file.
-
-Configure URL of email verification API.
-
-Configure URL of document upload API.
+Create a copy of config.yaml.sample file named config.yaml. Fill in following details in config.yaml file:
+- Add the Gmail label's name to LABEL_NAME key.
+- Add DB details (db_host, db_user, db_pass, db_name). Make sure DB name (db_name) which is configured is created in MySQL.
+- Add start_date from which you want to start parsing emails.
+- Add URL of email verification API.
+- Add URL of document upload API.
 
 
 ## Running the project
