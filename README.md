@@ -11,13 +11,11 @@ These instructions will get you a copy of the project up and running on your loc
 Install dependencies:
 sudo bundle install
 
-Create a new project in Google Developer's console from https://console.developers.google.com/projectcreate and add Gmail API to your project.
-
+Create a new project in Google Developer's console from https://console.developers.google.com/projectcreate.
+After creation, if you get "Page not viewable for organizations. To view this page, select a project.", click on Select and select your project.
 In dashboard, under "Getting Started", select "Enable APIs and get credentials like keys" section.
 Click on Enable API & Services and search Gmail API. Click on it and enable it.
 Click on Credentials section in left menu and select "Create Credential". For "Where will you be calling the API from?", select "Other UI". For "What data will you be accessing?", select "User Data". Follow remaining on-screen steps. Download credentials. Put the contents of those file to root of the project in credentials.json file.
-
-Create a copy of config.yaml.sample file named config.yaml.
 
 Open Gmail (http://www.gmail.com/).
 Now, we need to create filter settings specifically for our email parser.
@@ -38,7 +36,9 @@ Using above steps, create settings as below:
 - Subject has "itr" and has attachment
 - Subject has "document pan" and has attachment
 
-Add the label's name to config.yaml file.
+Create a copy of config.yaml.sample file named config.yaml.
+
+Add the Gmail label's name to config.yaml file.
 
 Configure DB credentials in config.yaml file. Make sure DB name which is configured is created in MySQL.
 
