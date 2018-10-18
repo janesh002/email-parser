@@ -46,5 +46,5 @@ Create a copy of config.yaml.sample file named config.yaml. Fill in following de
 
 ## Running the project
 
-Run ruby emailparser.rb. Follow the instruction when running for first time.
+Run ruby emailparser.rb. Follow the on-screen instruction when it is run for the first time.
 
