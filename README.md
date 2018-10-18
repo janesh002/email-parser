@@ -39,9 +39,9 @@ Using above steps, create settings as below:
 Create a copy of config.yaml.sample file named config.yaml. Fill in following details in config.yaml file:
 - Add the Gmail label's name to LABEL_NAME key.
 - Add DB details (db_host, db_user, db_pass, db_name). Make sure DB name (db_name) which is configured is created in MySQL.
-- Add start_date from which you want to start parsing emails.
-- Add URL of email verification API.
-- Add URL of document upload API.
+- Add start date(start_date) from which you want to start parsing emails.
+- Add URL of email verification API (email_api_url).
+- Add URL of document upload API (document_upload_url).
 
 
 ## Running the project
